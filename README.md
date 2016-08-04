@@ -1,5 +1,9 @@
 # happy-cerberus
-Personal joyful artificial guard with face detection
+
+## Don't say hi to cerberus, it will say hi to you!
+Happy cerberus is a joyful artificial guard with face detection that greets you when you come home and warn when intruders enter your home.
+
+Train cerberus on faces you want it to recognize using openface/torch and it will play customized greetings when familliar faces are detected. Get notified when new faces appear.
 
 git clone --recursive https://github.com/presight/happy-cerberus
 
