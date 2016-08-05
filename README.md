@@ -22,3 +22,11 @@ Get dlib face landmarks
 
 
 http://cmusatyalab.github.io/openface/demo-3-classifier/
+
+
+python ./openface/util/align_dlib_multiple.py {directory with list of photos} align outerEyesAndNose generated/test --size 96
+python ./openface/util/align_dlib.py {...} align outerEyesAndNose generated/test --size 96
+
+./openface/batch-represent/main.lua -outDir ./generated -data ./generated/normalized/
+
+python openface/demos/classifier.py train ./generated/ --classifier RadialSvm

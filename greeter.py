@@ -1,13 +1,18 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import openface
 import cv2
+import uuid
 import os
 import pickle
 import pdb
 import dlib
+import time
 
 ##
 # Face detection on small image, face identification on large
-#
+# Script for testing different classifiers, with validation
 ##
 
 import numpy as np
@@ -125,7 +130,18 @@ def getFaces(boxes, img):
     return faces
 
 
-def findPersons(img, labels, classifier):
+def optionally_play_message(person):
+    if not person.name in welcome_messages:
+        welcome_messages[person.name] = 0
+
+    if welcome_messages[person.name] + welcome_message_sleep_time < time.time():
+        os.system('espeak -vsv "Hej %s! Hur mår du?"&' % (person.name))
+        welcome_messages[person.name] = time.time()
+
+
+def findPersons(faces, labels, classifier, img):
+    global generated_image_id
+
     persons = []
     confidences = []
     
@@ -146,9 +162,19 @@ def findPersons(img, labels, classifier):
             person = Person(name, face, confidence)
             persons.append(person)
             print("Added %s with confidence %s" % (name, confidence))
+
+            optionally_play_message(person)
         else:
             print("Ignored %s with confidence %s" % (name, confidence))
-        
+
+            if save_unknown_faces:
+                if not os.path.exists('./generated/unknown'):
+                    os.makedirs('./generated/unknown')
+                
+                aligned_face = align.align(96, img, face.box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+                cv2.imwrite('./generated/unknown/%s-%s.png' % (session_id, generated_image_id), aligned_face)
+                print("Added to unknown dataset")
+                generated_image_id += 1
         
     return persons
 
@@ -185,26 +211,38 @@ def prune_match_boxes_persons(boxes, persons):
 
 if __name__ == '__main__':
     face_detector = get_faces_bounding_boxes_dlib
-    face_intersect_threshold = 0.5
-    person_confidence_threshold = 0.8
-    image_size = (640//4,480//4)
+    face_intersect_threshold = 0.75
+    person_confidence_threshold = 0.5
+    image_size = (640//1,480//1)
     update_faces_skip_frames = 3
-    show_video = True
+    
+    show_video = False
+    video_capture_device = 1
+
     facePredictorFile = './openface/models/dlib/shape_predictor_68_face_landmarks.dat'
     torchNetworkModelFile = './openface/models/openface/nn4.small2.v1.t7'
     face_image_dim = 96
     classifierFile = './generated/classifier.pkl'
+    
     face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml')
-    cv_face_box_min_size = (50,50)
+    cv_face_box_min_size = (50, 50)
     cv_face_box_scale_factor = 1.1
     cv_face_box_min_neighbours = 3
+    
+    # Save aligned images of all faces detected but not identified with a label
+    save_unknown_faces = True
+    session_id = str(uuid.uuid1())
+    generated_image_id = 0
+
+    welcome_message_sleep_time = 60
+    welcome_messages = {}
 
     tracked_persons = []
     align = openface.AlignDlib(facePredictorFile)
     net = openface.TorchNeuralNet(torchNetworkModelFile, imgDim=face_image_dim)
     iteration = 0
      
-    vc = cv2.VideoCapture(0)
+    vc = cv2.VideoCapture(video_capture_device)
 
     with open(classifierFile, 'r') as f:
         (labels, classifier) = pickle.load(f)
@@ -219,7 +257,7 @@ if __name__ == '__main__':
             boxes, pruned_tracked_persons = prune_match_boxes_persons(boxes, tracked_persons)
  
             faces = getFaces(boxes, img)
-            tracked_persons = findPersons(faces, labels, classifier) + pruned_tracked_persons
+            tracked_persons = findPersons(faces, labels, classifier, img) + pruned_tracked_persons
 
         for person in tracked_persons:
             if show_video:
