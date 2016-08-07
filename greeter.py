@@ -169,8 +169,8 @@ def findPersons(faces, labels, classifier, img):
                     os.makedirs('./generated/unknown')
                 
                 aligned_face = align.align(96, img, face.box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
-                unknown_file = './generated/unknown/%s-%s.png' % (session_id, generated_image_id), aligned_face
-                cv2.imwrite(unknown_file)
+                unknown_file = './generated/unknown/%s-%s.png' % (session_id, generated_image_id)
+                cv2.imwrite(unknown_file, aligned_face)
                 print("Saved unknown image %s" % (unknown_file))
 
                 generated_image_id += 1
