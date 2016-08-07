@@ -216,7 +216,7 @@ if __name__ == '__main__':
     update_faces_skip_frames = 3
     
     show_video = True
-    video_capture_device = 0
+    video_capture_device = 1
 
     facePredictorFile = './openface/models/dlib/shape_predictor_68_face_landmarks.dat'
     torchNetworkModelFile = './openface/models/openface/nn4.small2.v1.t7'
