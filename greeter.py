@@ -11,11 +11,6 @@ import pdb
 import dlib
 import time
 
-##
-# Face detection on small image, face identification on large
-# Script for testing different classifiers, with validation
-##
-
 import numpy as np
 np.set_printoptions(precision=2)
 
@@ -89,7 +84,7 @@ def get_faces_bounding_boxes_cv(img):
     boxes = []
 
     for box in face_boxes:
-        if True: #not is_false_positive(img, box):
+        if not is_false_positive(img, box):
             boxes.append(cv2_rect_to_dlib(box))
             print("Found face %s" % (box))
         else:
@@ -104,7 +99,7 @@ def get_faces_bounding_boxes_dlib(img):
     return [x for x in align.getAllFaceBoundingBoxes(img)]
 
 
-# Return a person based on a box provided they intersect each other above threshold
+# Returns a user with its face box intersecting box above the given threshold 
 def get_tracked_person(box):
     for person in tracked_persons:
         if squares_intersect(person.face.box, box) > face_intersect_threshold:
@@ -131,13 +126,13 @@ def getFaces(boxes, img):
     return faces
 
 
+# Play a welcome message
 def optionally_play_message(person):
     if not person.name in played_welcome_messages:
         played_welcome_messages[person.name] = 0
 
     if played_welcome_messages[person.name] + welcome_message_sleep_time < time.time():
         message = random.choice(available_welcome_messages) % (person.name)
-        #pdb.set_trace()
         os.system(text_to_speach_command % (message.replace(' ', '%20')))
         played_welcome_messages[person.name] = time.time()
 
@@ -160,12 +155,6 @@ def findPersons(faces, labels, classifier, img):
         name = labels.inverse_transform(max_i)
         confidence = predictions[max_i]
 
-        #prediction = classifier.predict(rep)[0]
-        #confidence = 1.0
-
-        #pdb.set_trace()
-        #name = prediction
-
         if confidence > person_confidence_threshold:
             person = Person(name, face, confidence)
             persons.append(person)
@@ -180,8 +169,10 @@ def findPersons(faces, labels, classifier, img):
                     os.makedirs('./generated/unknown')
                 
                 aligned_face = align.align(96, img, face.box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
-                cv2.imwrite('./generated/unknown/%s-%s.png' % (session_id, generated_image_id), aligned_face)
-                print("Added to unknown dataset")
+                unknown_file = './generated/unknown/%s-%s.png' % (session_id, generated_image_id), aligned_face
+                cv2.imwrite(unknown_file)
+                print("Saved unknown image %s" % (unknown_file))
+
                 generated_image_id += 1
         
     return persons
@@ -221,7 +212,7 @@ if __name__ == '__main__':
     face_detector = get_faces_bounding_boxes_dlib
     face_intersect_threshold = 0.75
     person_confidence_threshold = 0.95
-    image_size = (640//1,480//1)
+    image_size = (640//2,480//2)
     update_faces_skip_frames = 3
     
     show_video = True
@@ -251,6 +242,7 @@ if __name__ == '__main__':
         "%s, is it you?",
         "All rise for %s!"
     ]
+
     #text_to_speach_command = 'espeak "%s"&'
     text_to_speach_command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=EN_US&INPUT_TEXT=%s"|aplay&'
 
