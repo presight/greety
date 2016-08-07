@@ -128,7 +128,7 @@ def train(cross_validate=False, evaluate_result=True):
     save(le, dbn)
 
 if __name__ == '__main__':
-    train(evaluate_result=True, cross_validate=True)
+    train(evaluate_result=True)
 
 
     
