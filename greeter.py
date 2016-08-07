@@ -5,6 +5,7 @@ import openface
 import cv2
 import uuid
 import os
+import random
 import pickle
 import pdb
 import dlib
@@ -131,17 +132,18 @@ def getFaces(boxes, img):
 
 
 def optionally_play_message(person):
-    if not person.name in welcome_messages:
-        welcome_messages[person.name] = 0
+    if not person.name in played_welcome_messages:
+        played_welcome_messages[person.name] = 0
 
-    if welcome_messages[person.name] + welcome_message_sleep_time < time.time():
-        os.system('espeak -vsv "Hej %s! Hur mår du?"&' % (person.name))
-        welcome_messages[person.name] = time.time()
+    if played_welcome_messages[person.name] + welcome_message_sleep_time < time.time():
+        message = random.choice(available_welcome_messages) % (person.name)
+        #pdb.set_trace()
+        os.system(text_to_speach_command % (message.replace(' ', '%20')))
+        played_welcome_messages[person.name] = time.time()
 
 
 def findPersons(faces, labels, classifier, img):
     global generated_image_id
-
     persons = []
     confidences = []
     
@@ -157,6 +159,12 @@ def findPersons(faces, labels, classifier, img):
         
         name = labels.inverse_transform(max_i)
         confidence = predictions[max_i]
+
+        #prediction = classifier.predict(rep)[0]
+        #confidence = 1.0
+
+        #pdb.set_trace()
+        #name = prediction
 
         if confidence > person_confidence_threshold:
             person = Person(name, face, confidence)
@@ -212,12 +220,12 @@ def prune_match_boxes_persons(boxes, persons):
 if __name__ == '__main__':
     face_detector = get_faces_bounding_boxes_dlib
     face_intersect_threshold = 0.75
-    person_confidence_threshold = 0.5
+    person_confidence_threshold = 0.95
     image_size = (640//1,480//1)
     update_faces_skip_frames = 3
     
-    show_video = False
-    video_capture_device = 1
+    show_video = True
+    video_capture_device = 0
 
     facePredictorFile = './openface/models/dlib/shape_predictor_68_face_landmarks.dat'
     torchNetworkModelFile = './openface/models/openface/nn4.small2.v1.t7'
@@ -225,7 +233,7 @@ if __name__ == '__main__':
     classifierFile = './generated/classifier.pkl'
     
     face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml')
-    cv_face_box_min_size = (50, 50)
+    cv_face_box_min_size = (25, 25)
     cv_face_box_scale_factor = 1.1
     cv_face_box_min_neighbours = 3
     
@@ -235,7 +243,16 @@ if __name__ == '__main__':
     generated_image_id = 0
 
     welcome_message_sleep_time = 60
-    welcome_messages = {}
+    played_welcome_messages = {}
+    available_welcome_messages = [
+        'Hello %s, how are you today?',
+        'Oh, is it you again %s?',
+        'Hi there %s! You\'re awesome and you know it.',
+        "%s, is it you?",
+        "All rise for %s!"
+    ]
+    #text_to_speach_command = 'espeak "%s"&'
+    text_to_speach_command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=EN_US&INPUT_TEXT=%s"|aplay&'
 
     tracked_persons = []
     align = openface.AlignDlib(facePredictorFile)
