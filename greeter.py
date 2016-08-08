@@ -198,6 +198,7 @@ def prune_match_boxes_persons(boxes, persons):
     for person in persons:
         for i, box in enumerate(boxes):
             intersect = squares_intersect(person.face.box, box)
+            print("%s with %s intersecting %s - %.2f" % (person.name, person.face.box, box, intersect))
             if intersect > face_intersect_threshold:
                 person.face.box = box
                 pruned_persons.append(person)
@@ -210,13 +211,13 @@ def prune_match_boxes_persons(boxes, persons):
 
 if __name__ == '__main__':
     face_detector = get_faces_bounding_boxes_dlib
-    face_intersect_threshold = 0.75
-    person_confidence_threshold = 0.95
+    face_intersect_threshold = 0.9
+    person_confidence_threshold = 0.99
     image_size = (640//2,480//2)
     update_faces_skip_frames = 3
     
     show_video = True
-    video_capture_device = 1
+    video_capture_device = 0
 
     facePredictorFile = './openface/models/dlib/shape_predictor_68_face_landmarks.dat'
     torchNetworkModelFile = './openface/models/openface/nn4.small2.v1.t7'
