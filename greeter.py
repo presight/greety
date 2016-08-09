@@ -10,6 +10,7 @@ import pickle
 import pdb
 import dlib
 import time
+import urllib
 
 import numpy as np
 np.set_printoptions(precision=2)
@@ -132,8 +133,8 @@ def optionally_play_message(person):
         played_welcome_messages[person.name] = 0
 
     if played_welcome_messages[person.name] + welcome_message_sleep_time < time.time():
-        message = random.choice(available_welcome_messages) % (person.name)
-        os.system(text_to_speach_command % (message.replace(' ', '%20')))
+        message = random.choice(available_welcome_messages[language]) % (person.name)
+        text_to_speach_function(message)
         played_welcome_messages[person.name] = time.time()
 
 
@@ -209,15 +210,30 @@ def prune_match_boxes_persons(boxes, persons):
     return (pruned_boxes, pruned_persons)
 
 
+def marytts_speach(text):
+    command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=%s&INPUT_TEXT=%22%s%22"|aplay&' % (locale, urllib.quote_plus(text))
+    os.system(command)
+
+
+def espeak_speach(text):
+    locale_str = ""
+
+    if locale == 'sv':
+        locale_str = "-vsv "
+
+    command = 'espeak %s"%s"&' % (locale_str, text)
+    os.system(command)
+
+
 if __name__ == '__main__':
     face_detector = get_faces_bounding_boxes_dlib
     face_intersect_threshold = 0.9
     person_confidence_threshold = 0.99
-    image_size = (640//2,480//2)
+    image_size = (640//1,480//1)
     update_faces_skip_frames = 3
     
     show_video = True
-    video_capture_device = 0
+    video_capture_device = 1
 
     facePredictorFile = './openface/models/dlib/shape_predictor_68_face_landmarks.dat'
     torchNetworkModelFile = './openface/models/openface/nn4.small2.v1.t7'
@@ -234,18 +250,35 @@ if __name__ == '__main__':
     session_id = str(uuid.uuid1())
     generated_image_id = 0
 
-    welcome_message_sleep_time = 60
-    played_welcome_messages = {}
-    available_welcome_messages = [
-        'Hello %s, how are you today?',
-        'Oh, is it you again %s?',
-        'Hi there %s! You\'re awesome and you know it.',
-        "%s, is it you?",
-        "All rise for %s!"
-    ]
+    language = 'sv'
+    locale = 'sv'
+    welcome_message_sleep_time = 5
 
-    #text_to_speach_command = 'espeak "%s"&'
-    text_to_speach_command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=EN_US&INPUT_TEXT=%s"|aplay&'
+    played_welcome_messages = {}
+    available_welcome_messages = {
+        'en': [
+            'Hello %s, how are you today?',
+            'Oh, is it you again %s?',
+            'Hi there %s! You\'re awesome and you know it.',
+            "%s, is it you?",
+            "All rise for %s!"],
+        'sv': [
+            'Hej %s, vad händer?',
+            'Välkommen %s!',
+            'Hej, vad kul att se dig igen %s!',
+            "Vem där? Är det du %s?",
+            "Godmorgon %s, hur ska du rädda världen idag?",
+            "Tja %s, läget?"
+        ]
+    }
+
+    unknown_welcome_message = {
+        'sv': [
+        'Hej, vad heter du?'
+    ]}
+
+    text_to_speach_function = espeak_speach
+    
 
     tracked_persons = []
     align = openface.AlignDlib(facePredictorFile)
