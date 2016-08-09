@@ -204,7 +204,6 @@ def prune_match_boxes_persons(boxes, persons):
     for person in persons:
         for i, box in enumerate(boxes):
             intersect = squares_intersect(person.face.box, box)
-            print("%s with %s intersecting %s - %.2f" % (person.name, person.face.box, box, intersect))
             if intersect > face_intersect_threshold:
                 person.face.box = box
                 pruned_persons.append(person)
