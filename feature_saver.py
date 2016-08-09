@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+##
 # Find all faces on webcam and save them to aligned, cropped images
+##
 
 import cv2
 import openface
