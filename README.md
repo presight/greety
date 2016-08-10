@@ -56,9 +56,9 @@ Generate face representations
 Dive into greety.py and change `video_capture_device`, `person_confidence_threshold` and other parameters to get it running smoothly
 
 
-#### Optional dependencies ####
+## Optional dependencies ##
 To get text to voice synthesizing working you can install [espeak](http://espeak.sourceforge.net/) or [marytts](http://mary.dfki.de/), or implement support for a lib of your choosing.
 
 
-#### Limitations ####
+## Limitations ##
 So far openface hasn't reached a good decision on how to classify unknown faces, and thus the current system with DBN generates some false positives.
