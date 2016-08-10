@@ -232,13 +232,13 @@ def espeak_speach(text):
 if __name__ == '__main__':
     face_detector = get_faces_bounding_boxes_dlib
     face_intersect_threshold = 0.9
-    person_confidence_threshold = 0.99
+    person_confidence_threshold = 0.999
     image_size = (640//1,480//1)
     #image_size = (480//1,640//1)
     update_faces_skip_frames = 3
     
     show_video = True
-    video_capture_device = 1
+    video_capture_device = 0
 
     face_image_dim = 96
     classifierFile = './generated/classifier.pkl' 
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     generated_image_id = 0
 
     language = 'sv'
-    welcome_message_sleep_time = 5
+    welcome_message_sleep_time = 60
 
     played_welcome_messages = {}
     available_welcome_messages = {

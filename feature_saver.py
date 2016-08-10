@@ -17,12 +17,18 @@ face_predictor_file = './openface/models/dlib/shape_predictor_68_face_landmarks.
 greeter.align = openface.AlignDlib(face_predictor_file)    
 
 if __name__ == '__main__':
-    video_capture_device = 1
+    video_capture_device = 0
+
 
     vc = cv2.VideoCapture(video_capture_device)
 
     while True:
         _, img = vc.read()
+
+        cols, rows, _ = img.shape
+        M = cv2.getRotationMatrix2D((cols/2, rows/2),90,1)
+        img = cv2.warpAffine(img, M, (cols, rows))
+
         boxes = get_faces_bounding_boxes_dlib(img)
         faces = [Face(x, None) for x in boxes]
 
