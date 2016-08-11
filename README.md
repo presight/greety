@@ -45,15 +45,24 @@ Generate face representations
 
 
 ### Train the classifier
-`python train.py`
+Train greety classificator, optionaly with a specified conf file
+`python train.py` or `python train.py default.conf`
 
 
 ### Run greety! ###
-Run greety with a specified conf file
-`python greety.py default.conf`
+Run greety, optionaly with a specified conf file
+`python greety.py` or `python greety.py default.conf`
 
 
-## Optional dependencies ##
+### [Optional] Generate unknown face embeddings ###
+Download a set of unknown images not included in the dataset to learn, for example a subset of http://vis-www.cs.umass.edu/lfw/.
+Generate `./generated/unknown.npy` from the images in {lfw_directory}. The resulting file will contain face embeddings that will represent the unknown faces.
+./openface/demos/web/create-unknown-vectors.py --outputFile ./generated/unknown.npy --dlibFacePredictor ./openface/models/dlib/shape_predictor_68_face_landmarks.dat --model ./openface/models/openface/nn4.small2.v1.t7 {lfw_directory}`
+
+Also make sure `unknown_reps` in the config point to the generated `unknown.npy` file
+
+
+## [Optional] Text to speech ##
 To get text to voice synthesizing working you can install [espeak](http://espeak.sourceforge.net/) or [marytts](http://mary.dfki.de/), or implement support for a lib of your choosing.
 
 
