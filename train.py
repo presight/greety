@@ -52,7 +52,7 @@ def get_face_data():
 
     numIdentities = len(set(labels + [-1])) - 1
 
-    # Add random sampled unknown embeddings
+    # Add random sampled unknown embeddings, disabled for now
     unknownImgs = np.load("./openface/demos/web/unknown.npy")
 
     numUnknown = labels.count(-1)
@@ -61,7 +61,6 @@ def get_face_data():
     if numUnknownAdd > 0:
         print("Augmenting with {} unknown images".format(numUnknownAdd))
         for i, rep in enumerate(unknownImgs[:numUnknownAdd]):
-            # print(rep)
             embeddings = np.append(embeddings, [rep], axis=0)
             labels.append(-1)
     
@@ -142,7 +141,7 @@ def train(cross_validate=True, evaluate_result=True):
 
     if cross_validate:
         X_train, X_test, y_train, y_test, i_train, i_test = cross_validation.train_test_split(
-            embeddings, labelsNum, images, test_size=0.4, random_state=4)#randint(0,1000))
+            embeddings, labelsNum, images, test_size=0.4, random_state=4) #randint(0,1000))
         clf = train_clf(dim, X_train, y_train)
         
         if evaluate_result:

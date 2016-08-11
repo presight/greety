@@ -49,11 +49,8 @@ Generate face representations
 
 
 ### Run greety! ###
-`python greety.py`
-
-
-### Adapt parameters ###
-Dive into greety.py and change `video_capture_device`, `person_confidence_threshold` and other parameters to get it running smoothly
+Run greety with a specified conf file
+`python greety.py default.conf`
 
 
 ## Optional dependencies ##

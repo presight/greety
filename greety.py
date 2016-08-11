@@ -1,16 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
 import openface
 import cv2
 import uuid
 import os
 import random
+import json
 import pickle
 import pdb
 import dlib
+import codecs
 import time
 import urllib
+from ConfigParser import SafeConfigParser
 
 import numpy as np
 np.set_printoptions(precision=2)
@@ -120,7 +124,7 @@ def get_faces(boxes, img):
 
         # Only do face detection on faces which aren't already tracked
         if not tracked_person:
-            aligned_face = align.align(96, img, box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+            aligned_face = align.align(face_image_dim, img, box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
             rep = net.forward(aligned_face)
             faces.append(Face(box, rep))
         else:
@@ -136,15 +140,15 @@ def optionally_play_message(person):
         played_welcome_messages[person.name] = 0
 
     if played_welcome_messages[person.name] + welcome_message_sleep_time < time.time():
-        message = random.choice(available_welcome_messages[language]) % (person.name)
-        text_to_speach_function(message)
+        message = random.choice(available_welcome_messages[language]).replace("{name}", "%s") % (person.name)
+        text_to_speech_function(message)
         played_welcome_messages[person.name] = time.time()
 
 def save_unknown_face_img(img, face):
     if not os.path.exists('./generated/unknown'):
         os.makedirs('./generated/unknown')
                 
-    aligned_face = align.align(96, img, face.box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+    aligned_face = align.align(face_image_dim, img, face.box, landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
     unknown_file = './generated/unknown/%s-%s.png' % (session_id, generated_image_id)
     cv2.imwrite(unknown_file, aligned_face)
     print("Saved unknown image %s" % (unknown_file))
@@ -214,76 +218,72 @@ def prune_match_boxes_persons(boxes, persons):
     return (pruned_boxes, pruned_persons)
 
 
-def marytts_speach(text):
+def marytts_speech(text):
     command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=%s&INPUT_TEXT=%22%s%22"|aplay&' % (language, urllib.quote_plus(text))
     os.system(command)
 
 
-def espeak_speach(text):
+def espeak_speech(text):
     locale_str = ""
 
     if language == 'sv':
         locale_str = "-vsv "
 
     command = 'espeak %s"%s"&' % (locale_str, text)
-    os.system(command)
+    os.system(command.encode('utf-8'))
 
 
 if __name__ == '__main__':
-    face_detector = get_faces_bounding_boxes_dlib
-    face_intersect_threshold = 0.9
-    person_confidence_threshold = 0.999
-    image_size = (640//1,480//1)
-    #image_size = (480//1,640//1)
-    update_faces_skip_frames = 3
-    
-    show_video = True
-    video_capture_device = 0
+    conf_file = 'default.conf'
 
-    face_image_dim = 96
-    classifierFile = './generated/classifier.pkl' 
-    face_predictor_file = './openface/models/dlib/shape_predictor_68_face_landmarks.dat'
-    torch_network_model_file = './openface/models/openface/nn4.small2.v1.t7'
-    align = openface.AlignDlib(face_predictor_file)    
-   
-    face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml')
-    cv_face_box_min_size = (25, 25)
-    cv_face_box_scale_factor = 1.1
-    cv_face_box_min_neighbours = 3
-    
-    # Save aligned images of all faces detected but not identified with a label
-    save_unknown_faces = True
-    session_id = str(uuid.uuid1())
-    generated_image_id = 0
+    if len(sys.argv) > 1:
+        conf_file = sys.argv[1]
 
-    language = 'sv'
-    welcome_message_sleep_time = 60
+    config = SafeConfigParser()
+    config.readfp(codecs.open(conf_file, "r"))
+
+    face_detector_conf = config.get('FaceDetection', 'detector')
+    
+    if face_detector_conf == "dlib":    
+        face_detector = get_faces_bounding_boxes_dlib
+    elif face_detector_conf == "opencv":
+        face_detector = get_faces_bounding_boxes_cv
+
+    face_intersect_threshold = config.getfloat('FaceDetection', 'intersect_threshold')
+    face_cascade = cv2.CascadeClassifier(config.get('FaceDetection', 'cascade'))
+    cv_face_box_min_size = tuple(map(int, config.get('FaceDetection', 'min_box_size').split(',')))
+    cv_face_box_scale_factor = config.getfloat('FaceDetection', 'scale_factor')
+    cv_face_box_min_neighbours = config.getfloat('FaceDetection', 'min_neighbours')
+
+    face_predictor_file = config.get('Embedding', 'predictor')
+    torch_network_model_file = config.get('Embedding', 'model')
+    face_image_dim = config.getint('Embedding', 'image_dim')
+
+    show_video = config.getboolean('Video', 'show_video')
+    rotate_video = config.getint('Video', 'rotate_video')
+    video_capture_device = config.getint('Video', 'device')
+    image_size = tuple(map(int, config.get('Video', 'image_size').split(',')))
+    save_unknown_faces = config.getboolean('Video', 'save_unknown')
+
+    person_confidence_threshold = config.getfloat('Identification', 'min_confidence')
+    classifierFile = config.get('Identification', 'classifier')
+
+    language = config.get('Greetings', 'language')
+    welcome_message_sleep_time = config.getint('Greetings', 'message_wait_time')
+    available_welcome_messages = json.loads(config.get('Greetings', 'messages').replace('\n', ''))
+    speech_fun_name = config.get('Greetings', 'speech_api')
+
+    if speech_fun_name == 'espeak':
+        text_to_speech_function = espeak_speech
+    elif speech_fun_name == 'marytts':
+        text_to_speech_function = marytts_speech
+
+    update_faces_skip_frames = config.getint('Performance', 'skip_frames')
 
     played_welcome_messages = {}
-    available_welcome_messages = {
-        'en': [
-            'Hello %s, how are you today?',
-            'Oh, is it you again %s?',
-            'Hi there %s! You\'re awesome and you know it.',
-            "%s, is it you?",
-            "All rise for %s!"],
-        'sv': [
-            'Hej %s, vad händer?',
-            'Välkommen %s!',
-            'Hej, vad kul att se dig igen %s!',
-            "Vem där? Är det du %s?",
-            "Godmorgon %s, hur ska du rädda världen idag?",
-            "Tja %s, läget?"
-        ]
-    }
-
-    unknown_welcome_message = {
-        'sv': [
-        'Hej, vad heter du?'
-    ]}
-
-    text_to_speach_function = espeak_speach    
-
+    generated_image_id = 0
+    align = openface.AlignDlib(face_predictor_file)    
+    session_id = str(uuid.uuid1())
     tracked_persons = []
     net = openface.TorchNeuralNet(torch_network_model_file, imgDim=face_image_dim)
     iteration = 0
@@ -297,9 +297,12 @@ if __name__ == '__main__':
         _, img = vc.read()
 
         # Rotate the screen if the camera is tilted
-        #cols, rows, _ = img.shape
-        #M = cv2.getRotationMatrix2D((cols/2, rows/2),90,1)
-        #img = cv2.warpAffine(img, M, (cols, rows))
+        cols, rows, _ = img.shape
+
+        #pdb.set_trace()
+        if rotate_video > 0:
+            M = cv2.getRotationMatrix2D((cols/2, rows/2),rotate_video,1)
+            img = cv2.warpAffine(img, M, (cols, rows))
         
         img = cv2.resize(img, image_size, interpolation = cv2.INTER_CUBIC)
 
