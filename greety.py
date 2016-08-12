@@ -175,9 +175,13 @@ def find_persons(faces, labels, classifier, img):
         if confidence > person_confidence_threshold:
             person = Person(name, face, confidence)
             persons.append(person)
-            print("Added %s with confidence %s" % (name, confidence))
 
-            optionally_play_message(person)
+            if name != "-1":
+                print("Added %s with confidence %s" % (name, confidence))
+                optionally_play_message(person)
+            else:
+                print("Added unknown person with confidence %s" % (confidence))
+                
         else:
             print("Ignored %s with confidence %s" % (name, confidence))
 
