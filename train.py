@@ -76,8 +76,6 @@ def get_face_data():
 
 
 def print_optimal_min_confidence(success_pred_conf, failed_pred_conf):
-    success_pred_conf.sort()
-    failed_pred_conf.sort()
     
     success_pred_length = len(success_pred_conf)
     failed_pred_length = len(failed_pred_conf)
@@ -168,6 +166,9 @@ def evaluate(clf, X, y, embeddings, images, le):
     print "\nSuccessfull predictions below min confidence %s: %s out of %s" % (min_confidence, success_below_min_confidence, success_below_min_confidence+success_above_min_confidence)
     print "\nFailed predictions above min confidence %s: %s out of %s" % (min_confidence, failed_above_min_confidence, failed_below_min_confidence+failed_above_min_confidence)
 
+    success_pred_conf.sort()
+    failed_pred_conf.sort()
+    
     print "\nSuccessful predictions confidences:"
     print success_pred_conf
 
