@@ -44,13 +44,13 @@ from ConfigParser import SafeConfigParser, NoOptionError
 
 
 def get_face_data():
-    fname = "generated/labels.csv"
+    fname = labels_data_path
     labels_data = pd.read_csv(fname, header=None).as_matrix()
     images = labels_data[:, 1]
     labels = map(itemgetter(1),
                  map(os.path.split,
                      map(os.path.dirname, images)))  # Get the directory.
-    fname = "generated/reps.csv"
+    fname = reps_data_path
     embeddings = pd.read_csv(fname, header=None).as_matrix()
 
     numIdentities = len(set(labels + [-1])) - 1
@@ -180,7 +180,6 @@ def evaluate(clf, X, y, embeddings, images, le):
 
 def train_clf(dim, X, y, classificator):
     print("Training for {} classes".format(dim[2]))
-
     if classificator == "DBN":
         clf = DBN(dim,
                   learn_rates=dbn_learn_rates,
@@ -235,8 +234,8 @@ if __name__ == '__main__':
 
     classifier_location = config.get('Identification', 'classifier')
 
-    labels_data = config.get('Training', 'labels_data')
-    reps_data = config.get('Training', 'reps_data')
+    labels_data_path = config.get('Training', 'labels_data')
+    reps_data_path = config.get('Training', 'reps_data')
 
     try:
         unknown_reps = config.get('Training', 'unknown_reps')

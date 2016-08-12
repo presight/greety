@@ -306,10 +306,6 @@ if __name__ == '__main__':
         
         img = cv2.resize(img, image_size, interpolation = cv2.INTER_CUBIC)
 
-        #gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        #clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        #gray = clahe.apply(gray)
-
         # Skip frames to avoid these expensive steps
         if iteration % update_faces_skip_frames == 0:
             boxes = face_detector(img)
@@ -325,7 +321,7 @@ if __name__ == '__main__':
             print("Tracking %s in %s" % (person.name, person.face.box))
 
         if show_video:
-            cv2.imshow('Video', gray)
+            cv2.imshow('Video', img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
