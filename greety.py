@@ -15,7 +15,7 @@ import dlib
 import codecs
 import time
 import urllib
-from ConfigParser import SafeConfigParser
+from ConfigParser import SafeConfigParser, NoOptionError
 
 import numpy as np
 np.set_printoptions(precision=2)
@@ -137,6 +137,9 @@ def get_faces(boxes, img):
 
 # Play a welcome message
 def optionally_play_message(person):
+    if text_to_speech_function is None:
+        return
+
     if not person.name in played_welcome_messages:
         played_welcome_messages[person.name] = 0
 
@@ -228,7 +231,6 @@ def execute_next_command():
 
     if running_command:
         status = running_command.poll()
-        print status
         if status is not None:
             running_command = None
 
@@ -299,12 +301,18 @@ if __name__ == '__main__':
     language = config.get('Greetings', 'language')
     welcome_message_sleep_time = config.getint('Greetings', 'message_wait_time')
     available_welcome_messages = json.loads(config.get('Greetings', 'messages').replace('\n', ''))
-    speech_fun_name = config.get('Greetings', 'speech_api')
+
+    try:
+        speech_fun_name = config.get('Greetings', 'speech_api')
+    except NoOptionError:
+        speech_fun_name = None
 
     if speech_fun_name == 'espeak':
         text_to_speech_function = espeak_speech
     elif speech_fun_name == 'marytts':
         text_to_speech_function = marytts_speech
+    else:
+        text_to_speech_function = None
 
     update_faces_skip_frames = config.getint('Performance', 'skip_frames')
 
