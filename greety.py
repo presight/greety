@@ -3,6 +3,7 @@
 
 import sys
 import openface
+import subprocess
 import cv2
 import uuid
 import os
@@ -218,9 +219,32 @@ def prune_match_boxes_persons(boxes, persons):
     return (pruned_boxes, pruned_persons)
 
 
+def execute_next_command():
+    global command_queue, running_command
+
+    if running_command:
+        status = running_command.poll()
+        print status
+        if status is not None:
+            running_command = None
+
+    elif len(command_queue) > 0:
+        command = command_queue[0]
+        command_queue = command_queue[1:]
+        
+        process = subprocess.Popen(command, shell=True)
+        running_command = process
+
+
+def schedule_command(command):
+    global command_queue
+
+    command_queue.append(command)
+        
+
 def marytts_speech(text):
-    command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=%s&INPUT_TEXT=%22%s%22"|aplay&' % (language, urllib.quote_plus(text))
-    os.system(command)
+    command = 'curl "http://localhost:59125/process?INPUT_TYPE=TEXT&AUDIO=WAVE_FILE&OUTPUT_TYPE=AUDIO&LOCALE=%s&INPUT_TEXT=%22%s%22"|aplay' % (language, urllib.quote_plus(text))
+    schedule_command(command)
 
 
 def espeak_speech(text):
@@ -229,8 +253,8 @@ def espeak_speech(text):
     if language == 'sv':
         locale_str = "-vsv "
 
-    command = 'espeak %s"%s"&' % (locale_str, text)
-    os.system(command.encode('utf-8'))
+    command = 'espeak %s"%s"' % (locale_str, text)
+    schedule_command(command.encode('utf-8'))
 
 
 if __name__ == '__main__':
@@ -280,6 +304,8 @@ if __name__ == '__main__':
 
     update_faces_skip_frames = config.getint('Performance', 'skip_frames')
 
+    command_queue = []
+    running_command = None
     played_welcome_messages = {}
     generated_image_id = 0
     align = openface.AlignDlib(face_predictor_file)    
@@ -325,6 +351,8 @@ if __name__ == '__main__':
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+
+        execute_next_command()
 
         iteration += 1
 
